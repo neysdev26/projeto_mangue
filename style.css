@@ -223,3 +223,30 @@ h2::after {
     color: white;
     transform: translateY(-2px);
 }
+
+/* Estilos para o visualizador de PDF */
+#pdf-container {
+  width: 100%;
+  max-width: 800px;
+  margin: 20px auto;
+  border: 1px solid #ccc;
+  padding: 10px;
+  background: #f9f9f9;
+}
+
+#pdf-canvas {
+  width: 100%;
+  border: 1px solid #ddd;
+  background: white;
+}
+
+#pdf-controls {
+  margin-top: 10px;
+  text-align: center;
+}
+
+#pdf-controls button {
+  padding: 5px 10px;
+  margin: 0 5px;
+  cursor: pointer;
+}

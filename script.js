@@ -93,3 +93,61 @@ function carregarArtigos() {
                 '<p class="erro">Erro ao carregar artigos. Tente novamente mais tarde.</p>';
         });
 }
+
+// Configurar o worker do PDF.js (necessário para processamento)
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.12.313/pdf.worker.min.js';
+
+// Função para carregar o PDF
+async function loadPDF(pdfPath) {
+  // Carregar o PDF
+  const loadingTask = pdfjsLib.getDocument(pdfPath);
+  const pdf = await loadingTask.promise;
+
+  // Configurações iniciais
+  let currentPage = 1;
+  const canvas = document.getElementById('pdf-canvas');
+  const ctx = canvas.getContext('2d');
+  const pageNumSpan = document.getElementById('page-num');
+
+  // Renderizar a primeira página
+  renderPage(pdf, currentPage, canvas, ctx);
+
+  // Botões de navegação
+  document.getElementById('prev-page').addEventListener('click', () => {
+    if (currentPage > 1) {
+      currentPage--;
+      renderPage(pdf, currentPage, canvas, ctx);
+      pageNumSpan.textContent = `Página: ${currentPage}`;
+    }
+  });
+
+  document.getElementById('next-page').addEventListener('click', () => {
+    if (currentPage < pdf.numPages) {
+      currentPage++;
+      renderPage(pdf, currentPage, canvas, ctx);
+      pageNumSpan.textContent = `Página: ${currentPage}`;
+    }
+  });
+}
+
+// Função para renderizar uma página do PDF
+async function renderPage(pdf, pageNum, canvas, ctx) {
+  const page = await pdf.getPage(pageNum);
+  const viewport = page.getViewport({ scale: 1.5 });
+
+  // Ajustar o tamanho do canvas
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+
+  // Renderizar a página no canvas
+  await page.render({
+    canvasContext: ctx,
+    viewport: viewport
+  }).promise;
+}
+
+// Carregar o PDF quando a página for carregada
+window.addEventListener('DOMContentLoaded', () => {
+  // Substitua pelo caminho do seu PDF
+  loadPDF('assets/artigos/Power_BI.pdf');
+});
