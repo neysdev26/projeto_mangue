@@ -4,5 +4,14 @@
     "dataPublicacao": "2026-05-31",
     "conteudo": "assets/artigos/manguezais.html",
     "resumo": "Ecossistemas costeiros que protegem o litoral, combatem as mudanças climáticas e abrigam rica biodiversidade."
+  },
+
+
+
+  {
+    "titulo": "Semana do Meio Ambiente",
+    "dataPublicacao": "2026-06-04",
+    "conteudo": "assets/artigos/Semana do Meio Ambiente.pdf",
+    "resumo": "A Semana do Meio Ambiente é um período dedicado à conscientização e à ação em prol da proteção do nosso planeta."
   }
 ]
