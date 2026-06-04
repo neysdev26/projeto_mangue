@@ -1,0 +1,18 @@
+{
+  "name": "projeto_manguezal",
+  "version": "1.0.0",
+  "description": "blog",
+  "license": "ISC",
+  "author": "NeyS_Dev",
+  "type": "commonjs",
+  "main": "script.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@sanity/cli": "^6.6.0",
+    "@sanity/image-url": "^2.1.1",
+    "astro-portabletext": "^0.13.0",
+    "sanity": "^5.26.0"
+  }
+}
