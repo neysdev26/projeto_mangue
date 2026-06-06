@@ -1,3 +1,6 @@
+// Configurar o worker do PDF.js (DEVE SER O PRIMEIRO COMANDO)
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.12.313/pdf.worker.min.js';
+
 // Lógica para o menu lateral
 document.addEventListener('DOMContentLoaded', function() {
     const abrirMenu = document.getElementById('abrir-menu');
@@ -21,14 +24,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Lógica original para carregar artigos
+    // Verifica se existe o container de artigos e carrega-os
     if (document.getElementById('container-artigos')) {
-        carregarArtigos();
+        carregarArtigosLegado(); // Função antiga (para artigos HTML)
+    }
+
+    if (document.getElementById('artigos-lista')) {
+        carregarArtigosPDF(); // Função nova (para PDFs)
     }
 });
 
-// Função original para carregar artigos mantida intacta
-function carregarArtigos() {
+// Função antiga para carregar artigos HTML (mantida para compatibilidade)
+function carregarArtigosLegado() {
     fetch('artigos.json')
         .then(response => response.json())
         .then(artigos => {
@@ -94,60 +101,105 @@ function carregarArtigos() {
         });
 }
 
-// Configurar o worker do PDF.js (necessário para processamento)
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.12.313/pdf.worker.min.js';
+// Função nova para carregar artigos em PDF
+async function carregarArtigosPDF() {
+    try {
+        const response = await fetch('artigos.json');
+        const artigos = await response.json();
+        const artigosLista = document.getElementById('artigos-lista');
 
-// Função para carregar o PDF
-async function loadPDF(pdfPath) {
-  // Carregar o PDF
-  const loadingTask = pdfjsLib.getDocument(pdfPath);
-  const pdf = await loadingTask.promise;
+        artigos.forEach(artigo => {
+            const artigoDiv = document.createElement('div');
+            artigoDiv.className = 'artigo';
 
-  // Configurações iniciais
-  let currentPage = 1;
-  const canvas = document.getElementById('pdf-canvas');
-  const ctx = canvas.getContext('2d');
-  const pageNumSpan = document.getElementById('page-num');
+            // Verificar se o arquivo está corrompido
+            if (artigo.corrompido) {
+                artigoDiv.innerHTML = `
+                    <h2>${artigo.titulo}</h2>
+                    <p><strong>Autor:</strong> ${artigo.autor}</p>
+                    <p><strong>Descrição:</strong> ${artigo.descricao}</p>
+                    <p class="arquivo-corrompido">⚠️ Arquivo corrompido ou vazio. Não é possível exibir.</p>
+                `;
+            } else {
+                artigoDiv.innerHTML = `
+                    <h2>${artigo.titulo}</h2>
+                    <p><strong>Autor:</strong> ${artigo.autor}</p>
+                    <p><strong>Descrição:</strong> ${artigo.descricao}</p>
+                    <p><strong>Páginas:</strong> ${artigo.paginas} | <strong>Ano:</strong> ${artigo.ano}</p>
+                    <div class="pdf-container">
+                        <canvas class="pdf-canvas" data-pdf="${artigo.arquivo}"></canvas>
+                        <div class="pdf-controls">
+                            <button class="prev-page">Página Anterior</button>
+                            <span class="page-num">Página: 1</span>
+                            <button class="next-page">Próxima Página</button>
+                        </div>
+                    </div>
+                `;
+            }
 
-  // Renderizar a primeira página
-  renderPage(pdf, currentPage, canvas, ctx);
+            artigosLista.appendChild(artigoDiv);
+        });
 
-  // Botões de navegação
-  document.getElementById('prev-page').addEventListener('click', () => {
-    if (currentPage > 1) {
-      currentPage--;
-      renderPage(pdf, currentPage, canvas, ctx);
-      pageNumSpan.textContent = `Página: ${currentPage}`;
+        // Carregar os PDFs após criar os elementos HTML
+        carregarPDFs();
+
+    } catch (error) {
+        console.error('Erro ao carregar artigos:', error);
+        document.getElementById('artigos-lista').innerHTML = `
+            <p class="erro">Erro ao carregar a lista de artigos. Tente novamente mais tarde.</p>
+        `;
     }
-  });
+}
 
-  document.getElementById('next-page').addEventListener('click', () => {
-    if (currentPage < pdf.numPages) {
-      currentPage++;
-      renderPage(pdf, currentPage, canvas, ctx);
-      pageNumSpan.textContent = `Página: ${currentPage}`;
-    }
-  });
+// Função para carregar e exibir os PDFs
+async function carregarPDFs() {
+    document.querySelectorAll('.pdf-canvas').forEach(canvas => {
+        const pdfPath = canvas.getAttribute('data-pdf');
+        const controls = canvas.nextElementSibling;
+        const pageNumSpan = controls.querySelector('.page-num');
+        const prevBtn = controls.querySelector('.prev-page');
+        const nextBtn = controls.querySelector('.next-page');
+
+        let currentPage = 1;
+
+        pdfjsLib.getDocument(pdfPath).promise.then(pdf => {
+            renderPage(pdf, currentPage, canvas);
+
+            prevBtn.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderPage(pdf, currentPage, canvas);
+                    pageNumSpan.textContent = `Página: ${currentPage}`;
+                }
+            });
+
+            nextBtn.addEventListener('click', () => {
+                if (currentPage < pdf.numPages) {
+                    currentPage++;
+                    renderPage(pdf, currentPage, canvas);
+                    pageNumSpan.textContent = `Página: ${currentPage}`;
+                }
+            });
+        }).catch(error => {
+            console.error('Erro ao carregar PDF:', error);
+            canvas.parentElement.innerHTML = `
+                <p class="arquivo-corrompido">⚠️ Não foi possível carregar o PDF. Arquivo corrompido ou inexistente.</p>
+            `;
+        });
+    });
 }
 
 // Função para renderizar uma página do PDF
-async function renderPage(pdf, pageNum, canvas, ctx) {
-  const page = await pdf.getPage(pageNum);
-  const viewport = page.getViewport({ scale: 1.5 });
+async function renderPage(pdf, pageNum, canvas) {
+    const page = await pdf.getPage(pageNum);
+    const viewport = page.getViewport({ scale: 1.5 });
 
-  // Ajustar o tamanho do canvas
-  canvas.width = viewport.width;
-  canvas.height = viewport.height;
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
 
-  // Renderizar a página no canvas
-  await page.render({
-    canvasContext: ctx,
-    viewport: viewport
-  }).promise;
+    const ctx = canvas.getContext('2d');
+    await page.render({
+        canvasContext: ctx,
+        viewport: viewport
+    }).promise;
 }
-
-// Carregar o PDF quando a página for carregada
-window.addEventListener('DOMContentLoaded', () => {
-  // Substitua pelo caminho do seu PDF
-  loadPDF('assets/artigos/Power_BI.pdf');
-});

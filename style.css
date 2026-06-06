@@ -224,29 +224,54 @@ h2::after {
     transform: translateY(-2px);
 }
 
-/* Estilos para o visualizador de PDF */
-#pdf-container {
-  width: 100%;
-  max-width: 800px;
-  margin: 20px auto;
-  border: 1px solid #ccc;
-  padding: 10px;
+/* Estilos para os artigos */
+.artigos-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.artigo {
+  margin-bottom: 30px;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
   background: #f9f9f9;
 }
 
-#pdf-canvas {
-  width: 100%;
-  border: 1px solid #ddd;
+.artigo h2 {
+  margin-top: 0;
+  color: #1b3b2b;
+}
+
+.artigo p {
+  margin: 5px 0;
+}
+
+.pdf-container {
+  margin-top: 15px;
+  border: 1px solid #ccc;
+  padding: 10px;
   background: white;
 }
 
-#pdf-controls {
+.pdf-canvas {
+  width: 100%;
+  border: 1px solid #eee;
+}
+
+.pdf-controls {
   margin-top: 10px;
   text-align: center;
 }
 
-#pdf-controls button {
+.pdf-controls button {
   padding: 5px 10px;
   margin: 0 5px;
   cursor: pointer;
+}
+
+.arquivo-corrompido {
+  color: #d32f2f;
+  font-weight: bold;
 }
