@@ -224,54 +224,53 @@ h2::after {
     transform: translateY(-2px);
 }
 
-/* Estilos para os artigos */
-.artigos-container {
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.artigo {
-  margin-bottom: 30px;
-  padding: 20px;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  background: #f9f9f9;
-}
-
-.artigo h2 {
-  margin-top: 0;
-  color: #1b3b2b;
-}
-
-.artigo p {
-  margin: 5px 0;
-}
-
-.pdf-container {
-  margin-top: 15px;
-  border: 1px solid #ccc;
-  padding: 10px;
-  background: white;
+/* Estilos para o visualizador PDF */
+.pdf-visualizador {
+    margin-top: 1rem;
+    background: #f9f9f9;
+    border-radius: 12px;
+    padding: 1rem;
+    text-align: center;
 }
 
 .pdf-canvas {
-  width: 100%;
-  border: 1px solid #eee;
+    max-width: 100%;
+    height: auto;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border-radius: 8px;
 }
 
 .pdf-controls {
-  margin-top: 10px;
-  text-align: center;
+    margin-top: 1rem;
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    align-items: center;
 }
 
 .pdf-controls button {
-  padding: 5px 10px;
-  margin: 0 5px;
-  cursor: pointer;
+    background-color: #1b3b2b;
+    color: white;
+    border: none;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: 0.2s;
 }
 
-.arquivo-corrompido {
-  color: #d32f2f;
-  font-weight: bold;
+.pdf-controls button:disabled {
+    background-color: #aaa;
+    cursor: not-allowed;
+}
+
+.pdf-controls button:hover:not(:disabled) {
+    background-color: #34c759;
+}
+
+/* Spinner de carregamento */
+.loading-spinner {
+    padding: 1rem;
+    text-align: center;
+    color: #1b3b2b;
+    font-style: italic;
 }

@@ -1,205 +1,228 @@
-// Configurar o worker do PDF.js (DEVE SER O PRIMEIRO COMANDO)
+// Configurar o worker do PDF.js (DEVE SER A PRIMEIRA LINHA)
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.12.313/pdf.worker.min.js';
 
-// Lógica para o menu lateral
+// Lógica do menu lateral (mantida)
 document.addEventListener('DOMContentLoaded', function() {
     const abrirMenu = document.getElementById('abrir-menu');
     const fecharMenu = document.getElementById('fechar-menu');
     const menuLateral = document.getElementById('menu-lateral');
 
     if (abrirMenu && fecharMenu && menuLateral) {
-        abrirMenu.addEventListener('click', function() {
-            menuLateral.classList.add('active');
-        });
-
-        fecharMenu.addEventListener('click', function() {
-            menuLateral.classList.remove('active');
-        });
+        abrirMenu.addEventListener('click', () => menuLateral.classList.add('active'));
+        fecharMenu.addEventListener('click', () => menuLateral.classList.remove('active'));
     }
 
-    // Fechar menu ao clicar fora
     document.addEventListener('click', function(event) {
         if (!menuLateral.contains(event.target) && !abrirMenu.contains(event.target)) {
             menuLateral.classList.remove('active');
         }
     });
 
-    // Verifica se existe o container de artigos e carrega-os
+    // Carregar artigos (unificado)
     if (document.getElementById('container-artigos')) {
-        carregarArtigosLegado(); // Função antiga (para artigos HTML)
-    }
-
-    if (document.getElementById('artigos-lista')) {
-        carregarArtigosPDF(); // Função nova (para PDFs)
+        carregarArtigosUnificado();
     }
 });
 
-// Função antiga para carregar artigos HTML (mantida para compatibilidade)
-function carregarArtigosLegado() {
-    fetch('artigos.json')
-        .then(response => response.json())
-        .then(artigos => {
-            const container = document.getElementById('container-artigos');
-
-            if (!artigos || artigos.length === 0) {
-                container.innerHTML = '<p class="mensagem-vazia">Nenhum artigo encontrado.</p>';
-                return;
-            }
-
-            artigos.forEach(artigo => {
-                const card = document.createElement('article');
-                card.className = 'artigo-card';
-
-                const data = new Date(artigo.dataPublicacao);
-                const options = { year: 'numeric', month: 'long', day: 'numeric' };
-                const dataFormatada = data.toLocaleDateString('pt-BR', options);
-
-                card.innerHTML = `
-                    <h3>${artigo.titulo}</h3>
-                    <p class="data-publicacao">${dataFormatada}</p>
-                    <p class="resumo">${artigo.resumo}</p>
-                    <button class="btn-leia-mais" data-artigo="${artigo.conteudo}">Ler Artigo Completo</button>
-                    <div class="conteudo-artigo" style="display: none;"></div>
-                `;
-
-                container.appendChild(card);
-            });
-
-            // Adiciona evento de clique aos botões
-            document.querySelectorAll('.btn-leia-mais').forEach(botao => {
-                botao.addEventListener('click', function() {
-                    const artigoPath = this.getAttribute('data-artigo');
-                    const conteudoDiv = this.nextElementSibling;
-
-                    if (conteudoDiv.style.display === 'none') {
-                        if (conteudoDiv.innerHTML === '') {
-                            fetch(artigoPath)
-                                .then(response => response.text())
-                                .then(html => {
-                                    const parser = new DOMParser();
-                                    const doc = parser.parseFromString(html, 'text/html');
-                                    const conteudo = doc.querySelector('body').innerHTML;
-                                    conteudoDiv.innerHTML = conteudo;
-                                    this.textContent = 'Ocultar Artigo';
-                                    conteudoDiv.style.display = 'block';
-                                });
-                        } else {
-                            this.textContent = 'Ocultar Artigo';
-                            conteudoDiv.style.display = 'block';
-                        }
-                    } else {
-                        this.textContent = 'Ler Artigo Completo';
-                        conteudoDiv.style.display = 'none';
-                    }
-                });
-            });
-        })
-        .catch(error => {
-            console.error('Erro:', error);
-            document.getElementById('container-artigos').innerHTML =
-                '<p class="erro">Erro ao carregar artigos. Tente novamente mais tarde.</p>';
-        });
-}
-
-// Função nova para carregar artigos em PDF
-async function carregarArtigosPDF() {
+// Função principal que carrega e exibe todos os artigos (HTML + PDF)
+async function carregarArtigosUnificado() {
     try {
         const response = await fetch('artigos.json');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const artigos = await response.json();
-        const artigosLista = document.getElementById('artigos-lista');
+        const container = document.getElementById('container-artigos');
+        container.innerHTML = '';
+
+        if (!artigos.length) {
+            container.innerHTML = '<p class="mensagem-vazia">Nenhum artigo encontrado.</p>';
+            return;
+        }
 
         artigos.forEach(artigo => {
-            const artigoDiv = document.createElement('div');
-            artigoDiv.className = 'artigo';
+            const card = document.createElement('article');
+            card.className = 'artigo-card';
 
-            // Verificar se o arquivo está corrompido
-            if (artigo.corrompido) {
-                artigoDiv.innerHTML = `
-                    <h2>${artigo.titulo}</h2>
-                    <p><strong>Autor:</strong> ${artigo.autor}</p>
-                    <p><strong>Descrição:</strong> ${artigo.descricao}</p>
-                    <p class="arquivo-corrompido">⚠️ Arquivo corrompido ou vazio. Não é possível exibir.</p>
-                `;
-            } else {
-                artigoDiv.innerHTML = `
-                    <h2>${artigo.titulo}</h2>
-                    <p><strong>Autor:</strong> ${artigo.autor}</p>
-                    <p><strong>Descrição:</strong> ${artigo.descricao}</p>
-                    <p><strong>Páginas:</strong> ${artigo.paginas} | <strong>Ano:</strong> ${artigo.ano}</p>
-                    <div class="pdf-container">
-                        <canvas class="pdf-canvas" data-pdf="${artigo.arquivo}"></canvas>
-                        <div class="pdf-controls">
-                            <button class="prev-page">Página Anterior</button>
-                            <span class="page-num">Página: 1</span>
-                            <button class="next-page">Próxima Página</button>
-                        </div>
-                    </div>
+            const data = new Date(artigo.dataPublicacao);
+            const dataFormatada = data.toLocaleDateString('pt-BR', { year: 'numeric', month: 'long', day: 'numeric' });
+
+            // Monta o card com as informações básicas
+            let cardHTML = `
+                <h3>${escapeHTML(artigo.titulo)}</h3>
+                <p class="data-publicacao">${dataFormatada}</p>
+                <p class="resumo">${escapeHTML(artigo.resumo)}</p>
+            `;
+            // Se for PDF, exibe autor/páginas/ano (opcional)
+            if (artigo.tipo === 'pdf') {
+                cardHTML += `
+                    <p class="meta-pdf">
+                        <strong>Autor:</strong> ${escapeHTML(artigo.autor || 'Desconhecido')} | 
+                        <strong>Páginas:</strong> ${artigo.paginas || '?'} | 
+                        <strong>Ano:</strong> ${artigo.ano || '-'}
+                    </p>
                 `;
             }
 
-            artigosLista.appendChild(artigoDiv);
+            // Botão e div do conteúdo (com ID único)
+            const artigoId = `artigo-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+            cardHTML += `
+                <button class="btn-leia-mais" data-tipo="${artigo.tipo}" data-conteudo="${artigo.conteudo}" data-id="${artigoId}" aria-expanded="false">
+                    Ler Artigo Completo
+                </button>
+                <div id="${artigoId}" class="conteudo-artigo" style="display: none;"></div>
+            `;
+            card.innerHTML = cardHTML;
+            container.appendChild(card);
         });
 
-        // Carregar os PDFs após criar os elementos HTML
-        carregarPDFs();
+        // Usa event delegation para os botões (funciona mesmo com novos cards)
+        container.addEventListener('click', async (e) => {
+            const botao = e.target.closest('.btn-leia-mais');
+            if (!botao) return;
+            e.preventDefault();
+            await toggleArtigo(botao);
+        });
 
     } catch (error) {
         console.error('Erro ao carregar artigos:', error);
-        document.getElementById('artigos-lista').innerHTML = `
-            <p class="erro">Erro ao carregar a lista de artigos. Tente novamente mais tarde.</p>
-        `;
+        document.getElementById('container-artigos').innerHTML = '<p class="erro">Erro ao carregar artigos. Tente novamente mais tarde.</p>';
     }
 }
 
-// Função para carregar e exibir os PDFs
-async function carregarPDFs() {
-    document.querySelectorAll('.pdf-canvas').forEach(canvas => {
-        const pdfPath = canvas.getAttribute('data-pdf');
-        const controls = canvas.nextElementSibling;
-        const pageNumSpan = controls.querySelector('.page-num');
-        const prevBtn = controls.querySelector('.prev-page');
-        const nextBtn = controls.querySelector('.next-page');
+// Alterna entre exibir e ocultar o conteúdo do artigo (HTML ou PDF)
+async function toggleArtigo(botao) {
+    const tipo = botao.getAttribute('data-tipo');
+    const conteudoPath = botao.getAttribute('data-conteudo');
+    const artigoId = botao.getAttribute('data-id');
+    const conteudoDiv = document.getElementById(artigoId);
+    const expanded = botao.getAttribute('aria-expanded') === 'true';
 
-        let currentPage = 1;
+    // Se já estiver expandido, apenas recolhe
+    if (expanded) {
+        conteudoDiv.style.display = 'none';
+        botao.setAttribute('aria-expanded', 'false');
+        botao.textContent = 'Ler Artigo Completo';
+        return;
+    }
 
-        pdfjsLib.getDocument(pdfPath).promise.then(pdf => {
-            renderPage(pdf, currentPage, canvas);
+    // Se ainda não foi carregado, carrega conforme o tipo
+    if (conteudoDiv.innerHTML.trim() === '') {
+        botao.disabled = true;
+        botao.textContent = 'Carregando...';
+        conteudoDiv.style.display = 'block';
+        conteudoDiv.innerHTML = '<div class="loading-spinner">Carregando conteúdo...</div>';
 
-            prevBtn.addEventListener('click', () => {
-                if (currentPage > 1) {
-                    currentPage--;
-                    renderPage(pdf, currentPage, canvas);
-                    pageNumSpan.textContent = `Página: ${currentPage}`;
-                }
-            });
-
-            nextBtn.addEventListener('click', () => {
-                if (currentPage < pdf.numPages) {
-                    currentPage++;
-                    renderPage(pdf, currentPage, canvas);
-                    pageNumSpan.textContent = `Página: ${currentPage}`;
-                }
-            });
-        }).catch(error => {
-            console.error('Erro ao carregar PDF:', error);
-            canvas.parentElement.innerHTML = `
-                <p class="arquivo-corrompido">⚠️ Não foi possível carregar o PDF. Arquivo corrompido ou inexistente.</p>
-            `;
-        });
-    });
+        try {
+            if (tipo === 'html') {
+                await carregarArtigoHTML(conteudoPath, conteudoDiv);
+            } else if (tipo === 'pdf') {
+                await carregarArtigoPDF(conteudoPath, conteudoDiv);
+            } else {
+                conteudoDiv.innerHTML = '<p class="erro">Tipo de artigo desconhecido.</p>';
+            }
+        } catch (error) {
+            console.error('Falha ao carregar:', error);
+            conteudoDiv.innerHTML = '<p class="erro">Erro ao carregar o artigo. Verifique o arquivo.</p>';
+        } finally {
+            botao.disabled = false;
+            botao.textContent = 'Ocultar Artigo Completo';
+            botao.setAttribute('aria-expanded', 'true');
+        }
+    } else {
+        // Já carregado, apenas exibe
+        conteudoDiv.style.display = 'block';
+        botao.textContent = 'Ocultar Artigo Completo';
+        botao.setAttribute('aria-expanded', 'true');
+    }
 }
 
-// Função para renderizar uma página do PDF
+// Carrega um artigo HTML via fetch e insere no div
+async function carregarArtigoHTML(caminho, containerDiv) {
+    const response = await fetch(caminho);
+    if (!response.ok) throw new Error(`HTTP ${response.status} ao buscar ${caminho}`);
+    const html = await response.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const corpo = doc.body.innerHTML;
+    containerDiv.innerHTML = corpo;
+}
+
+// Carrega um PDF e exibe com PDF.js (controles de página)
+async function carregarArtigoPDF(caminho, containerDiv) {
+    // Cria a estrutura do visualizador PDF
+    containerDiv.innerHTML = `
+        <div class="pdf-visualizador">
+            <canvas class="pdf-canvas"></canvas>
+            <div class="pdf-controls">
+                <button class="prev-page" disabled>◀ Anterior</button>
+                <span class="page-info">Página <span class="page-num">1</span> de <span class="page-count">?</span></span>
+                <button class="next-page" disabled>Próxima ▶</button>
+            </div>
+        </div>
+    `;
+
+    const canvas = containerDiv.querySelector('.pdf-canvas');
+    const prevBtn = containerDiv.querySelector('.prev-page');
+    const nextBtn = containerDiv.querySelector('.next-page');
+    const pageNumSpan = containerDiv.querySelector('.page-num');
+    const pageCountSpan = containerDiv.querySelector('.page-count');
+
+    let pdfDoc = null;
+    let currentPage = 1;
+
+    try {
+        // Carrega o documento PDF
+        pdfDoc = await pdfjsLib.getDocument(caminho).promise;
+        pageCountSpan.textContent = pdfDoc.numPages;
+        renderPage(pdfDoc, currentPage, canvas);
+
+        // Habilita os botões de acordo com a página
+        function updateButtons() {
+            prevBtn.disabled = (currentPage <= 1);
+            nextBtn.disabled = (currentPage >= pdfDoc.numPages);
+        }
+        updateButtons();
+
+        // Eventos dos botões
+        prevBtn.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderPage(pdfDoc, currentPage, canvas);
+                pageNumSpan.textContent = currentPage;
+                updateButtons();
+            }
+        });
+        nextBtn.addEventListener('click', () => {
+            if (currentPage < pdfDoc.numPages) {
+                currentPage++;
+                renderPage(pdfDoc, currentPage, canvas);
+                pageNumSpan.textContent = currentPage;
+                updateButtons();
+            }
+        });
+    } catch (error) {
+        console.error('Erro ao carregar PDF:', error);
+        containerDiv.innerHTML = `<p class="erro">❌ Não foi possível carregar o PDF. Arquivo pode estar corrompido ou caminho incorreto.</p>`;
+    }
+}
+
+// Função auxiliar para renderizar uma página do PDF no canvas
 async function renderPage(pdf, pageNum, canvas) {
     const page = await pdf.getPage(pageNum);
-    const viewport = page.getViewport({ scale: 1.5 });
-
+    const scale = 1.5; // Ajuste conforme desejar
+    const viewport = page.getViewport({ scale });
     canvas.width = viewport.width;
     canvas.height = viewport.height;
-
     const ctx = canvas.getContext('2d');
-    await page.render({
-        canvasContext: ctx,
-        viewport: viewport
-    }).promise;
+    await page.render({ canvasContext: ctx, viewport }).promise;
+}
+
+// Previne injeção de HTML nos títulos e resumos
+function escapeHTML(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
 }
