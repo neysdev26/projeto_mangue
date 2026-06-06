@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://neysdev26.github.io/projeto_mangue/sitemap.xml
