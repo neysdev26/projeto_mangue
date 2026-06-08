@@ -4,16 +4,16 @@
     "titulo": "A Importância dos Manguezais para o Meio Ambiente",
     "dataPublicacao": "2026-05-31",
     "resumo": "Ecossistemas costeiros que protegem o litoral, combatem as mudanças climáticas e abrigam rica biodiversidade.",
-    "conteudo": "assets/artigos/manguezais.html"
+    "conteudo": "assets/artigos/manguezais.html",    "autor": "Ney Santos",
+    "ano": 2026
   },
   {
-    "tipo": "pdf",
+    "tipo": "html",
     "titulo": "Semana do Meio Ambiente",
     "dataPublicacao": "2026-06-01",
     "resumo": "A Semana do Meio Ambiente é um período dedicado à conscientização e à ação em prol da proteção do nosso planeta.",
-    "conteudo": "assets/artigos/Semana_Meio_Ambiente.pdf",
+    "conteudo": "assets/artigos/Semana_Meio_Ambiente.html",
     "autor": "Ney Santos",
-    "paginas": 2,
     "ano": 2026
   }
 ]
